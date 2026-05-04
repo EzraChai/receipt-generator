@@ -5,7 +5,7 @@ import { ReceiptForm } from "./receipt-form";
 import { ReceiptPreview } from "./receipt-preview";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Download, Eye, FileText, GraduationCap, Plus } from "lucide-react";
+import { Download, Eye, FileText, Plus } from "lucide-react";
 import type { Receipt } from "@/lib/invoice-types";
 import { generateReceiptNumber } from "@/lib/invoice-types";
 import html2canvas from "html2canvas-pro";
@@ -40,6 +40,59 @@ export function ReceiptGenerator() {
 
     setIsExporting(true);
     try {
+      // If native share is available, generate the PDF and open the native share dialog.
+      if (navigator.share) {
+        const canvas = await html2canvas(previewRef.current!, {
+          scale: 2,
+          useCORS: true,
+          backgroundColor: "#ffffff",
+        });
+
+        const imgData = canvas.toDataURL("image/jpeg", 1);
+        const pdf = new jsPDF({
+          orientation: "portrait",
+          unit: "in",
+          format: "letter",
+        });
+
+        const imgWidth = 8.5;
+        const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+        pdf.addImage(imgData, "JPEG", 0, 0, imgWidth, imgHeight);
+
+        // Try to obtain a Blob from jsPDF; fallback to arraybuffer->Blob if necessary.
+        let pdfBlob: Blob;
+        try {
+          // preferred: output('blob')
+          // @ts-ignore - some jspdf versions expose output('blob')
+          pdfBlob = pdf.output("blob");
+        } catch {
+          const arrayBuffer = pdf.output("arraybuffer") as ArrayBuffer;
+          pdfBlob = new Blob([arrayBuffer], { type: "application/pdf" });
+        }
+
+        const file = new File([pdfBlob], `${receipt.receiptNumber}.pdf`, {
+          type: "application/pdf",
+        });
+
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+          await navigator.share({
+            files: [file],
+            title: `Receipt ${receipt.receiptNumber}`,
+            text: `Receipt ${receipt.receiptNumber}`,
+          });
+        } else {
+          // Fallback to download if sharing files isn't supported
+          pdf.save(`${receipt.receiptNumber}.pdf`);
+        }
+
+        // Return early so the rest of the function (which also generates/saves a PDF)
+        // is not executed when we already handled sharing/download.
+        return;
+      }
+
+      // If navigator.share is not available, continue with the existing flow below
+      // which will generate the canvas/pdf and call pdf.save(...)
       const canvas = await html2canvas(previewRef.current, {
         scale: 2,
         useCORS: true,
