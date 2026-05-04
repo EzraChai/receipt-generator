@@ -86,23 +86,36 @@ export function ReceiptGenerator() {
                 />
               </div>
               <div>
-                <h1 className="text-lg font-semibold tracking-tight text-foreground">
+                <h1 className="text-lg  hidden lg:block font-semibold tracking-tight text-foreground">
                   Receipt Generator
                 </h1>
-                <p className="text-xs uppercase tracking-widest text-muted-foreground">
+                <p className="text-xs hidden lg:block uppercase tracking-widest text-muted-foreground">
                   波德申基督教长老会（芦骨） 社会关怀中心
                 </p>
               </div>
             </div>
             <div className="flex items-center gap-3">
-              <Button
-                variant="outline"
-                onClick={handleNewReceipt}
-                className="h-10 px-4 text-sm font-medium"
-              >
-                <Plus className="mr-2 h-4 w-4" />
-                New Receipt
-              </Button>
+              <>
+                {/* Icon-only button for small screens (phone first) */}
+                <Button
+                  variant="outline"
+                  onClick={handleNewReceipt}
+                  className="h-10 w-10 px-0 text-sm font-medium lg:hidden"
+                  aria-label="New Receipt"
+                >
+                  <Plus className="h-4 w-4" />
+                </Button>
+
+                {/* Full button for larger screens */}
+                <Button
+                  variant="outline"
+                  onClick={handleNewReceipt}
+                  className="h-10 px-4 text-sm font-medium hidden lg:inline-flex"
+                >
+                  <Plus className="mr-2 h-4 w-4" />
+                  New Receipt
+                </Button>
+              </>
               <Button
                 onClick={handleExportPDF}
                 disabled={isExporting}
